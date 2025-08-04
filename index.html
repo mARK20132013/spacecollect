@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Космический мусорщик PRO</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        body.light-mode {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        #gameCanvas {
+            border: 2px solid #444;
+            transition: background-color 0.3s;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px black;
+        }
+        #upgradeMenu {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 10;
+        }
+        #settingsMenu {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 10;
+            width: 220px;
+        }
+        .light-mode #settingsMenu,
+        .light-mode #upgradeMenu {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            transition: background-color 0.3s;
+        }
+        .light-mode #startScreen,
+        .light-mode #gameOverScreen {
+            background-color: rgba(240, 240, 240, 0.9);
+            color: #333;
+        }
+        #gameOverScreen {
+            display: none;
+        }
+        h1 {
+            color: #4fc3f7;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        .light-mode h1 {
+            color: #0288d1;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            background-color: #4fc3f7;
+            color: #111;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .light-mode button {
+            background-color: #0288d1;
+            color: white;
+        }
+        button:hover {
+            background-color: #0288d1;
+        }
+        .light-mode button:hover {
+            background-color: #01579b;
+        }
+        .upgrade-btn, .settings-btn {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px;
+            font-size: 14px;
+        }
+        .color-option {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+        .color-option.selected {
+            border: 2px solid white;
+            transform: scale(1.1);
+        }
+        .light-mode .color-option.selected {
+            border: 2px solid #333;
+        }
+        .boss-health {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .boss-health-bar {
+            height: 100%;
+            background: #e74c3c;
+            width: 100%;
+        }
+        .time-mode {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        .time-btn {
+            padding: 5px 10px;
+            font-size: 14px;
+            text-align: left;
+        }
+        .time-btn.selected {
+            background-color: #0288d1;
+            color: white;
+        }
+        .light-mode .time-btn.selected {
+            background-color: #01579b;
+        }
+        #settingsButton {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .light-mode #settingsButton {
+            background: rgba(255,255,255,0.7);
+            color: #333;
+        }
+        #restartButtonGame {
+            position: absolute;
+            right: 10px;
+            top: 50px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 10;
+            display: none;
+        }
+        .light-mode #restartButtonGame {
+            background: rgba(255,255,255,0.7);
+            color: #333;
+        }
+        .settings-section {
+            margin: 10px 0;
+        }
+        .settings-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .remaining-time {
+            font-size: 12px;
+            color: #aaa;
+            margin-left: 10px;
+        }
+        .light-mode .remaining-time {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div id="ui">
+        <div>Счет: <span id="score">0</span></div>
+        <div>Время: <span id="time">0</span> сек</div>
+        <div>Груз: <span id="cargo">0</span>/<span id="maxCargo">5</span></div>
+        <div>Броня: <span id="armor">0</span></div>
+    </div>
+    
+    <button id="settingsButton">Настройки</button>
+    <button id="restartButtonGame">Заново</button>
+    
+    <div id="upgradeMenu">
+        <h3>Улучшения</h3>
+        <button class="upgrade-btn" id="upgradeSpeed">Скорость (+1) - 50 очков</button>
+        <button class="upgrade-btn" id="upgradeCargo">Грузоподъемность (+2) - 100 очков</button>
+        <button class="upgrade-btn" id="upgradeArmor">Броня (+25) - 75 очков</button>
+    </div>
+    
+    <div id="settingsMenu">
+        <h3>Настройки</h3>
+        
+        <div class="settings-section">
+            <div class="settings-title">Режим:</div>
+            <button class="settings-btn" id="darkModeBtn">Темный режим</button>
+            <button class="settings-btn" id="lightModeBtn">Светлый режим</button>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-title">Цвет карты:</div>
+            <div class="color-option selected" style="background-color: #000000;" data-color="#000000"></div>
+            <div class="color-option" style="background-color: #003300;" data-color="#003300"></div>
+            <div class="color-option" style="background-color: #330000;" data-color="#330000"></div>
+            <div class="color-option" style="background-color: #000033;" data-color="#000033"></div>
+            <div class="color-option" style="background-color: #006666;" data-color="#006666"></div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-title">Временной режим:</div>
+            <div class="time-mode">
+                <button class="time-btn selected" id="time60">60 секунд <span class="remaining-time" id="remaining60">(осталось: 60)</span></button>
+                <button class="time-btn" id="time90">90 секунд <span class="remaining-time" id="remaining90">(осталось: 90)</span></button>
+                <button class="time-btn" id="time120">120 секунд <span class="remaining-time" id="remaining120">(осталось: 120)</span></button>
+            </div>
+        </div>
+        
+        <button class="settings-btn" id="closeSettingsBtn">Закрыть</button>
+    </div>
+    
+    <div id="startScreen">
+        <h1>КОСМИЧЕСКИЙ МУСОРЩИК PRO</h1>
+        <p>Собирайте мусор разных типов, улучшайте корабль и сражайтесь с мусорными монстрами!</p>
+        
+        <p>Управление: WASD/Стрелки - движение, Пробел - выгрузка, U - меню улучшений</p>
+        <button id="startButton">СТАРТ</button>
+    </div>
+    
+    <div id="gameOverScreen">
+        <h1>ИГРА ОКОНЧЕНА</h1>
+        <p>Ваш счет: <span id="finalScore">0</span></p>
+        <p>Уничтожено боссов: <span id="bossKills">0</span></p>
+        <button id="restartButton">ИГРАТЬ СНОВА</button>
+    </div>
+
+    <script>
+        // Инициализация игры
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const cargoElement = document.getElementById('cargo');
+        const maxCargoElement = document.getElementById('maxCargo');
+        const armorElement = document.getElementById('armor');
+        const finalScoreElement = document.getElementById('finalScore');
+        const bossKillsElement = document.getElementById('bossKills');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const upgradeMenu = document.getElementById('upgradeMenu');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const restartButtonGame = document.getElementById('restartButtonGame');
+        const upgradeSpeedBtn = document.getElementById('upgradeSpeed');
+        const upgradeCargoBtn = document.getElementById('upgradeCargo');
+        const upgradeArmorBtn = document.getElementById('upgradeArmor');
+        const time60Btn = document.getElementById('time60');
+        const time90Btn = document.getElementById('time90');
+        const time120Btn = document.getElementById('time120');
+        const remaining60 = document.getElementById('remaining60');
+        const remaining90 = document.getElementById('remaining90');
+        const remaining120 = document.getElementById('remaining120');
+        const settingsButton = document.getElementById('settingsButton');
+        const darkModeBtn = document.getElementById('darkModeBtn');
+        const lightModeBtn = document.getElementById('lightModeBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const colorOptions = document.querySelectorAll('.color-option');
+
+        // Игровые объекты
+        let player = {
+            x: 400,
+            y: 300,
+            radius: 20,
+            speed: 5,
+            baseSpeed: 5,
+            angle: 0,
+            cargo: 0,
+            maxCargo: 5,
+            armor: 0,
+            upgrades: {
+                speed: 0,
+                cargo: 0,
+                armor: 0
+            }
+        };
+        
+        let station = {
+            x: 700,
+            y: 100,
+            radius: 30
+        };
+        
+        let trash = [];
+        let asteroids = [];
+        let particles = [];
+        let bosses = [];
+        let score = 0;
+        let gameTime = 60;
+        let initialGameTime = 60;
+        let lastTime = 0;
+        let gameRunning = false;
+        let keys = {};
+        let bossKills = 0;
+        let bossSpawnTimer = 0;
+        let mapColor = '#000000';
+        let timeModeChanged = false;
+
+        // Типы мусора
+        const TRASH_TYPES = {
+            COMMON: {
+                color: '#f1c40f',
+                value: 10,
+                radius: 8
+            },
+            DANGEROUS: {
+                color: '#e74c3c',
+                value: 25,
+                radius: 12,
+                damage: 10
+            },
+            VALUABLE: {
+                color: '#2ecc71',
+                value: 50,
+                radius: 6
+            }
+        };
+
+        // Обработчики событий
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+        restartButtonGame.addEventListener('click', startGame);
+        upgradeSpeedBtn.addEventListener('click', () => upgrade('speed'));
+        upgradeCargoBtn.addEventListener('click', () => upgrade('cargo'));
+        upgradeArmorBtn.addEventListener('click', () => upgrade('armor'));
+
+        time60Btn.addEventListener('click', () => selectTimeMode(60));
+        time90Btn.addEventListener('click', () => selectTimeMode(90));
+        time120Btn.addEventListener('click', () => selectTimeMode(120));
+
+        settingsButton.addEventListener('click', toggleSettingsMenu);
+        darkModeBtn.addEventListener('click', () => setDarkMode(true));
+        lightModeBtn.addEventListener('click', () => setDarkMode(false));
+        closeSettingsBtn.addEventListener('click', toggleSettingsMenu);
+
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                mapColor = option.dataset.color;
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === ' ' && gameRunning) {
+                unloadCargo();
+            }
+            if (e.key.toLowerCase() === 'u' && gameRunning) {
+                upgradeMenu.style.display = upgradeMenu.style.display === 'none' ? 'block' : 'none';
+                if (settingsMenu.style.display === 'block') {
+                    settingsMenu.style.display = 'none';
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        // Переключение меню настроек
+        function toggleSettingsMenu() {
+            settingsMenu.style.display = settingsMenu.style.display === 'none' ? 'block' : 'none';
+            if (upgradeMenu.style.display === 'block') {
+                upgradeMenu.style.display = 'none';
+            }
+            
+            // Обновляем отображение оставшегося времени при открытии меню
+            if (settingsMenu.style.display === 'block' && gameRunning) {
+                updateTimeButtons();
+            }
+        }
+
+        // Обновление кнопок времени
+        function updateTimeButtons() {
+            remaining60.textContent = `(осталось: ${Math.max(0, gameTime)})`;
+            remaining90.textContent = `(осталось: ${Math.max(0, gameTime + 30)})`;
+            remaining120.textContent = `(осталось: ${Math.max(0, gameTime + 60)})`;
+        }
+
+        // Установка темного/светлого режима
+        function setDarkMode(isDark) {
+            if (isDark) {
+                document.body.classList.remove('light-mode');
+                localStorage.setItem('gameTheme', 'dark');
+            } else {
+                document.body.classList.add('light-mode');
+                localStorage.setItem('gameTheme', 'light');
+            }
+        }
+
+        // Проверка сохраненной темы
+        function checkSavedTheme() {
+            const savedTheme = localStorage.getItem('gameTheme');
+            if (savedTheme === 'light') {
+                setDarkMode(false);
+            } else {
+                setDarkMode(true);
+            }
+        }
+
+        // Выбор режима времени
+        function selectTimeMode(seconds) {
+            if (gameRunning) {
+                // Если игра уже идет, меняем оставшееся время
+                const timeDiff = seconds - initialGameTime;
+                gameTime += timeDiff;
+                
+                // Обновляем отображение времени
+                timeElement.textContent = Math.max(0, Math.floor(gameTime));
+                
+                // Обновляем кнопки времени
+                updateTimeButtons();
+            }
+            
+            initialGameTime = seconds;
+            time60Btn.classList.remove('selected');
+            time90Btn.classList.remove('selected');
+            time120Btn.classList.remove('selected');
+            
+            if (seconds === 60) time60Btn.classList.add('selected');
+            if (seconds === 90) time90Btn.classList.add('selected');
+            if (seconds === 120) time120Btn.classList.add('selected');
+            
+            timeModeChanged = true;
+        }
+
+        // Запуск игры
+        function startGame() {
+            player = {
+                x: 400,
+                y: 300,
+                radius: 20,
+                speed: 5,
+                baseSpeed: 5,
+                angle: 0,
+                cargo: 0,
+                maxCargo: 5,
+                armor: 0,
+                upgrades: {
+                    speed: 0,
+                    cargo: 0,
+                    armor: 0
+                }
+            };
+            
+            trash = [];
+            asteroids = [];
+            particles = [];
+            bosses = [];
+            score = 0;
+            gameTime = initialGameTime;
+            bossKills = 0;
+            bossSpawnTimer = 0;
+            timeModeChanged = false;
+            
+            scoreElement.textContent = score;
+            timeElement.textContent = gameTime;
+            cargoElement.textContent = player.cargo;
+            maxCargoElement.textContent = player.maxCargo;
+            armorElement.textContent = player.armor;
+            
+            // Создаем начальные объекты
+            for (let i = 0; i < 20; i++) {
+                spawnTrash();
+            }
+            
+            for (let i = 0; i < 8; i++) {
+                spawnAsteroid();
+            }
+            
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            upgradeMenu.style.display = 'none';
+            settingsMenu.style.display = 'none';
+            restartButtonGame.style.display = 'block';
+            gameRunning = true;
+            lastTime = Date.now();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Основной игровой цикл
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            const now = Date.now();
+            const deltaTime = (now - lastTime) / 1000;
+            lastTime = now;
+            
+            update(deltaTime);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Обновление игры
+        function update(deltaTime) {
+            // Уменьшение времени
+            if (!timeModeChanged) {
+                gameTime -= deltaTime;
+            }
+            timeModeChanged = false;
+            
+            timeElement.textContent = Math.max(0, Math.floor(gameTime));
+            
+            if (gameTime <= 0) {
+                gameOver();
+                return;
+            }
+            
+            // Спавн босса каждые 30 секунд
+            bossSpawnTimer += deltaTime;
+            if (bossSpawnTimer >= 30 && bosses.length === 0) {
+                spawnBoss();
+                bossSpawnTimer = 0;
+            }
+            
+            // Управление кораблем
+            if (keys['w'] || keys['ArrowUp']) {
+                player.x += Math.cos(player.angle) * player.speed;
+                player.y += Math.sin(player.angle) * player.speed;
+            }
+            if (keys['s'] || keys['ArrowDown']) {
+                player.x -= Math.cos(player.angle) * player.speed * 0.5;
+                player.y -= Math.sin(player.angle) * player.speed * 0.5;
+            }
+            if (keys['a'] || keys['ArrowLeft']) {
+                player.angle -= 0.1;
+            }
+            if (keys['d'] || keys['ArrowRight']) {
+                player.angle += 0.1;
+            }
+            
+            // Ограничение игрока в пределах экрана
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+            
+            // Спавн мусора
+            if (Math.random() < 0.03 && trash.length < 25) {
+                spawnTrash();
+            }
+            
+            // Спавн астероидов
+            if (Math.random() < 0.015 && asteroids.length < 10) {
+                spawnAsteroid();
+            }
+            
+            // Обновление мусора
+            for (let i = trash.length - 1; i >= 0; i--) {
+                // Проверка сбора игроком
+                const dx = player.x - trash[i].x;
+                const dy = player.y - trash[i].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < player.radius + trash[i].radius && player.cargo < player.maxCargo) {
+                    // Опасный мусор наносит урон
+                    if (trash[i].type === 'DANGEROUS' && player.armor <= 0) {
+                        createParticles(player.x, player.y, '#e74c3c');
+                        continue;
+                    }
+                    
+                    trash.splice(i, 1);
+                    player.cargo++;
+                    cargoElement.textContent = player.cargo;
+                    createParticles(trash[i].x, trash[i].y, trash[i].color);
+                    continue;
+                }
+            }
+            
+            // Обновление астероидов
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                asteroids[i].x += Math.cos(asteroids[i].angle) * asteroids[i].speed;
+                asteroids[i].y += Math.sin(asteroids[i].angle) * asteroids[i].speed;
+                
+                // Отскок от границ
+                if (asteroids[i].x < asteroids[i].radius || asteroids[i].x > canvas.width - asteroids[i].radius) {
+                    asteroids[i].angle = Math.PI - asteroids[i].angle;
+                }
+                if (asteroids[i].y < asteroids[i].radius || asteroids[i].y > canvas.height - asteroids[i].radius) {
+                    asteroids[i].angle = -asteroids[i].angle;
+                }
+                
+                // Проверка столкновения с игроком
+                const dx = player.x - asteroids[i].x;
+                const dy = player.y - asteroids[i].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < player.radius + asteroids[i].radius) {
+                    // Потеря части груза при столкновении
+                    if (player.cargo > 0) {
+                        const lost = Math.min(3, player.cargo);
+                        player.cargo -= lost;
+                        cargoElement.textContent = player.cargo;
+                        
+                        // Выброс потерянного мусора
+                        for (let j = 0; j < lost; j++) {
+                            spawnTrashAt(player.x + (Math.random() * 40 - 20), player.y + (Math.random() * 40 - 20));
+                        }
+                    }
+                    
+                    // Урон броне
+                    if (player.armor > 0) {
+                        player.armor -= 10;
+                        if (player.armor < 0) player.armor = 0;
+                        armorElement.textContent = player.armor;
+                    }
+                    
+                    // Эффект столкновения
+                    createParticles(asteroids[i].x, asteroids[i].y, '#e74c3c');
+                    
+                    // Отбрасывание игрока
+                    player.x += dx * 0.2;
+                    player.y += dy * 0.2;
+                }
+            }
+            
+            // Обновление боссов
+            for (let i = bosses.length - 1; i >= 0; i--) {
+                const boss = bosses[i];
+                
+                // Движение к игроку
+                const dx = player.x - boss.x;
+                const dy = player.y - boss.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    boss.x += (dx / distance) * boss.speed;
+                    boss.y += (dy / distance) * boss.speed;
+                }
+                
+                // Атака босса
+                boss.attackTimer += deltaTime;
+                if (boss.attackTimer >= boss.attackRate) {
+                    boss.attackTimer = 0;
+                    // Создание мусорного снаряда
+                    trash.push({
+                        x: boss.x,
+                        y: boss.y,
+                        radius: 15,
+                        type: 'DANGEROUS',
+                        color: TRASH_TYPES.DANGEROUS.color,
+                        angle: Math.atan2(player.y - boss.y, player.x - boss.x),
+                        speed: 3,
+                        isProjectile: true
+                    });
+                }
+                
+                // Проверка попаданий в босса
+                for (let j = trash.length - 1; j >= 0; j--) {
+                    if (trash[j].isProjectile) continue;
+                    
+                    const tdx = boss.x - trash[j].x;
+                    const tdy = boss.y - trash[j].y;
+                    const tdist = Math.sqrt(tdx * tdx + tdy * tdy);
+                    
+                    if (tdist < boss.radius + trash[j].radius) {
+                        trash.splice(j, 1);
+                        boss.health -= 5;
+                        
+                        if (boss.health <= 0) {
+                            // Уничтожение босса
+                            bosses.splice(i, 1);
+                            score += 200;
+                            scoreElement.textContent = score;
+                            bossKills++;
+                            createParticles(boss.x, boss.y, '#e74c3c', 50);
+                            // Выпадение улучшений
+                            if (Math.random() < 0.5) {
+                                spawnTrashAt(boss.x, boss.y, 'VALUABLE');
+                            }
+                        }
+                        break;
+                    }
+                }
+                
+                // Столкновение с игроком
+                if (distance < player.radius + boss.radius) {
+                    // Большой урон игроку
+                    if (player.armor > 0) {
+                        player.armor = 0;
+                        armorElement.textContent = player.armor;
+                    }
+                    
+                    // Потеря всего груза
+                    while (player.cargo > 0) {
+                        spawnTrashAt(player.x + (Math.random() * 40 - 20), player.y + (Math.random() * 40 - 20));
+                        player.cargo--;
+                    }
+                    cargoElement.textContent = player.cargo;
+                    
+                    createParticles(player.x, player.y, '#e74c3c', 30);
+                }
+            }
+            
+            // Обновление мусора (движущегося)
+            for (let i = trash.length - 1; i >= 0; i--) {
+                if (trash[i].isProjectile) {
+                    trash[i].x += Math.cos(trash[i].angle) * trash[i].speed;
+                    trash[i].y += Math.sin(trash[i].angle) * trash[i].speed;
+                    
+                    // Удаление за пределами экрана
+                    if (trash[i].x < -50 || trash[i].x > canvas.width + 50 ||
+                        trash[i].y < -50 || trash[i].y > canvas.height + 50) {
+                        trash.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // Проверка попадания в игрока
+                    const dx = player.x - trash[i].x;
+                    const dy = player.y - trash[i].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < player.radius + trash[i].radius) {
+                        if (trash[i].type === 'DANGEROUS') {
+                            if (player.armor > 0) {
+                                player.armor -= TRASH_TYPES.DANGEROUS.damage;
+                                if (player.armor < 0) player.armor = 0;
+                                armorElement.textContent = player.armor;
+                            } else {
+                                // Потеря части груза
+                                const lost = Math.min(2, player.cargo);
+                                player.cargo -= lost;
+                                cargoElement.textContent = player.cargo;
+                                for (let j = 0; j < lost; j++) {
+                                    spawnTrashAt(player.x + (Math.random() * 40 - 20), player.y + (Math.random() * 40 - 20));
+                                }
+                            }
+                        }
+                        trash.splice(i, 1);
+                        createParticles(player.x, player.y, '#e74c3c', 15);
+                    }
+                }
+            }
+            
+            // Обновление частиц
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx;
+                particles[i].y += particles[i].vy;
+                particles[i].life--;
+                
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Отрисовка игры
+        function render() {
+            // Очистка экрана
+            ctx.fillStyle = mapColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Фоновые звезды
+            drawStars();
+            
+            // Отрисовка станции
+            ctx.save();
+            ctx.translate(station.x, station.y);
+            ctx.rotate(Date.now() / 3000);
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath();
+            ctx.arc(0, 0, station.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#27ae60';
+            ctx.beginPath();
+            ctx.arc(0, 0, station.radius * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#4fc3f7';
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.arc(Math.cos(angle) * station.radius * 0.8, Math.sin(angle) * station.radius * 0.8, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+            
+            // Отрисовка мусора
+            for (const item of trash) {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                
+                if (item.isProjectile) {
+                    ctx.rotate(item.angle);
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -item.radius);
+                    ctx.lineTo(item.radius * 0.7, item.radius * 0.7);
+                    ctx.lineTo(-item.radius * 0.7, item.radius * 0.7);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.rotate(Date.now() / 1000);
+                    ctx.fillStyle = item.color;
+                    
+                    if (item.type === 'COMMON') {
+                        // Обычный мусор - шестеренка
+                        ctx.beginPath();
+                        for (let i = 0; i < 8; i++) {
+                            const angle1 = (i / 8) * Math.PI * 2;
+                            const angle2 = ((i + 0.5) / 8) * Math.PI * 2;
+                            ctx.lineTo(Math.cos(angle1) * item.radius, Math.sin(angle1) * item.radius);
+                            ctx.lineTo(Math.cos(angle2) * item.radius * 0.6, Math.sin(angle2) * item.radius * 0.6);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (item.type === 'VALUABLE') {
+                        // Ценный мусор - кристалл
+                        ctx.beginPath();
+                        ctx.moveTo(0, -item.radius);
+                        ctx.lineTo(item.radius * 0.7, 0);
+                        ctx.lineTo(0, item.radius);
+                        ctx.lineTo(-item.radius * 0.7, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.moveTo(0, -item.radius * 0.5);
+                        ctx.lineTo(item.radius * 0.35, 0);
+                        ctx.lineTo(0, item.radius * 0.5);
+                        ctx.lineTo(-item.radius * 0.35, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else {
+                        // Опасный мусор - радиоактивный знак
+                        ctx.beginPath();
+                        ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, item.radius * 0.4, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#e74c3c';
+                        for (let i = 0; i < 3; i++) {
+                            const angle = (i / 3) * Math.PI * 2;
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0);
+                            ctx.lineTo(Math.cos(angle) * item.radius, Math.sin(angle) * item.radius);
+                            ctx.lineTo(Math.cos(angle + Math.PI/3) * item.radius, Math.sin(angle + Math.PI/3) * item.radius);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                    }
+                }
+                ctx.restore();
+            }
+            
+            // Отрисовка астероидов
+            for (const asteroid of asteroids) {
+                ctx.save();
+                ctx.translate(asteroid.x, asteroid.y);
+                ctx.rotate(Date.now() / 2000);
+                ctx.fillStyle = '#95a5a6';
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const r = asteroid.radius * (0.7 + Math.sin(angle * 2) * 0.3);
+                    if (i === 0) {
+                        ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                    } else {
+                        ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // Отрисовка боссов
+            for (const boss of bosses) {
+                ctx.save();
+                ctx.translate(boss.x, boss.y);
+                
+                // Тело босса
+                ctx.fillStyle = '#8e44ad';
+                ctx.beginPath();
+                ctx.arc(0, 0, boss.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Глаза
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(-boss.radius * 0.3, -boss.radius * 0.2, boss.radius * 0.15, 0, Math.PI * 2);
+                ctx.arc(boss.radius * 0.3, -boss.radius * 0.2, boss.radius * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Рот
+                ctx.fillStyle = '#c0392b';
+                ctx.beginPath();
+                ctx.arc(0, boss.radius * 0.1, boss.radius * 0.3, 0, Math.PI);
+                ctx.fill();
+                
+                // Руки-захваты
+                ctx.strokeStyle = '#8e44ad';
+                ctx.lineWidth = 5;
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2 + Date.now() / 500;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * boss.radius * 0.7, Math.sin(angle) * boss.radius * 0.7);
+                    ctx.lineTo(Math.cos(angle) * boss.radius * 1.5, Math.sin(angle) * boss.radius * 1.5);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                
+                // Полоска здоровья
+                if (boss.health < boss.maxHealth) {
+                    const healthWidth = 100 * (boss.health / boss.maxHealth);
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(boss.x - 50, boss.y - boss.radius - 20, 100, 10);
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(boss.x - 50, boss.y - boss.radius - 20, healthWidth, 10);
+                }
+            }
+            
+            // Отрисовка игрока
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
+            
+            // Корпус корабля
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.moveTo(player.radius, 0);
+            ctx.lineTo(-player.radius * 0.7, player.radius * 0.7);
+            ctx.lineTo(-player.radius * 0.5, 0);
+            ctx.lineTo(-player.radius * 0.7, -player.radius * 0.7);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Кабина
+            ctx.fillStyle = '#2980b9';
+            ctx.beginPath();
+            ctx.arc(-player.radius * 0.2, 0, player.radius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Двигатель (анимация)
+            ctx.fillStyle = ['#f39c12', '#f1c40f', '#e67e22'][Math.floor(Date.now() / 100) % 3];
+            ctx.beginPath();
+            ctx.moveTo(-player.radius * 0.5, -player.radius * 0.3);
+            ctx.lineTo(-player.radius, 0);
+            ctx.lineTo(-player.radius * 0.5, player.radius * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Отображение груза
+            if (player.cargo > 0) {
+                ctx.fillStyle = '#4fc3f7';
+                ctx.fillRect(-15, -player.radius - 15, 30, 10);
+                ctx.fillStyle = '#0288d1';
+                ctx.fillRect(-15, -player.radius - 15, (player.cargo / player.maxCargo) * 30, 10);
+            }
+            
+            // Отображение брони
+            if (player.armor > 0) {
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, player.radius + 5, 0, Math.PI * 2 * (player.armor / (25 + player.upgrades.armor * 25)));
+                ctx.stroke();
+            }
+            ctx.restore();
+            
+            // Отрисовка частиц
+            for (const particle of particles) {
+                ctx.fillStyle = particle.color;
+                ctx.globalAlpha = particle.life / particle.maxLife;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Создание частиц эффектов
+        function createParticles(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.random() * 6 - 3,
+                    vy: Math.random() * 6 - 3,
+                    size: 2 + Math.random() * 3,
+                    color: color,
+                    life: 30 + Math.random() * 30,
+                    maxLife: 60
+                });
+            }
+        }
+
+        // Выгрузка мусора на станции
+        function unloadCargo() {
+            const dx = player.x - station.x;
+            const dy = player.y - station.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < player.radius + station.radius && player.cargo > 0) {
+                // Разные бонусы за разный мусор
+                let bonus = 0;
+                if (Math.random() < 0.1) {
+                    // Шанс найти ценный мусор
+                    bonus = TRASH_TYPES.VALUABLE.value;
+                } else {
+                    bonus = TRASH_TYPES.COMMON.value;
+                }
+                
+                score += player.cargo * bonus;
+                scoreElement.textContent = score;
+                player.cargo = 0;
+                cargoElement.textContent = player.cargo;
+                createParticles(station.x, station.y, '#2ecc71');
+            }
+        }
+
+        // Спавн мусора
+        function spawnTrash() {
+            const types = ['COMMON', 'DANGEROUS', 'VALUABLE'];
+            const weights = [0.7, 0.2, 0.1]; // Вероятности появления
+            let rand = Math.random();
+            let typeIndex = 0;
+            
+            for (let i = 0; i < weights.length; i++) {
+                if (rand < weights[i]) {
+                    typeIndex = i;
+                    break;
+                }
+                rand -= weights[i];
+            }
+            
+            const type = types[typeIndex];
+            
+            trash.push({
+                x: Math.random() * (canvas.width - 40) + 20,
+                y: Math.random() * (canvas.height - 40) + 20,
+                radius: TRASH_TYPES[type].radius,
+                type: type,
+                color: TRASH_TYPES[type].color,
+                angle: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Спавн мусора в конкретной позиции
+        function spawnTrashAt(x, y, forceType) {
+            const type = forceType || ['COMMON', 'DANGEROUS', 'VALUABLE'][Math.floor(Math.random() * 3)];
+            
+            trash.push({
+                x: x,
+                y: y,
+                radius: TRASH_TYPES[type].radius,
+                type: type,
+                color: TRASH_TYPES[type].color,
+                angle: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Спавн астероида
+        function spawnAsteroid() {
+            let x, y;
+            // Спавн за пределами экрана
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? -30 : canvas.width + 30;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() < 0.5 ? -30 : canvas.height + 30;
+            }
+            
+            asteroids.push({
+                x: x,
+                y: y,
+                radius: 20 + Math.random() * 30,
+                speed: 1 + Math.random() * 2,
+                angle: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Спавн босса
+        function spawnBoss() {
+            let x, y;
+            // Спавн за пределами экрана
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? -50 : canvas.width + 50;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() < 0.5 ? -50 : canvas.height + 50;
+            }
+            
+            const levelScale = 1 + (bossKills * 0.2);
+            
+            bosses.push({
+                x: x,
+                y: y,
+                radius: 30 * levelScale,
+                speed: 1.5,
+                health: 100 * levelScale,
+                maxHealth: 100 * levelScale,
+                attackTimer: 0,
+                attackRate: 2 - (levelScale * 0.2)
+            });
+        }
+
+        // Улучшение характеристик
+        function upgrade(type) {
+            let cost = 0;
+            
+            switch (type) {
+                case 'speed':
+                    cost = 50 + player.upgrades.speed * 25;
+                    if (score >= cost) {
+                        score -= cost;
+                        player.upgrades.speed++;
+                        player.baseSpeed += 1;
+                        player.speed = player.baseSpeed;
+                        scoreElement.textContent = score;
+                        upgradeSpeedBtn.textContent = `Скорость (+1) - ${50 + player.upgrades.speed * 25} очков`;
+                    }
+                    break;
+                    
+                case 'cargo':
+                    cost = 100 + player.upgrades.cargo * 50;
+                    if (score >= cost) {
+                        score -= cost;
+                        player.upgrades.cargo++;
+                        player.maxCargo += 2;
+                        maxCargoElement.textContent = player.maxCargo;
+                        scoreElement.textContent = score;
+                        upgradeCargoBtn.textContent = `Грузоподъемность (+2) - ${100 + player.upgrades.cargo * 50} очков`;
+                    }
+                    break;
+                    
+                case 'armor':
+                    cost = 75 + player.upgrades.armor * 25;
+                    if (score >= cost) {
+                        score -= cost;
+                        player.upgrades.armor++;
+                        player.armor += 25;
+                        armorElement.textContent = player.armor;
+                        scoreElement.textContent = score;
+                        upgradeArmorBtn.textContent = `Броня (+25) - ${75 + player.upgrades.armor * 25} очков`;
+                    }
+                    break;
+            }
+        }
+
+        // Отрисовка фоновых звезд
+        function drawStars() {
+            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#333' : '#fff';
+            for (let i = 0; i < 200; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 1.5;
+                const alpha = 0.2 + Math.random() * 0.8;
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(x, y, size, size);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Конец игры
+        function gameOver() {
+            gameRunning = false;
+            finalScoreElement.textContent = score;
+            bossKillsElement.textContent = bossKills;
+            gameOverScreen.style.display = 'flex';
+            restartButtonGame.style.display = 'none';
+        }
+
+        // Проверяем сохраненную тему при загрузке
+        checkSavedTheme();
+    </script>
+</body>
+</html>
